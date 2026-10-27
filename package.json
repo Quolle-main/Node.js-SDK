@@ -1,6 +1,6 @@
 {
   "name": "@quolle/sdk",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Official Node.js SDK for Quolle — transactional email API for African SaaS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "test": "node dist/test.js"
+    "test": "npm run build && node --test"
   },
   "keywords": [
     "email",
@@ -34,6 +34,7 @@
     "node": ">=18"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
   }
 }

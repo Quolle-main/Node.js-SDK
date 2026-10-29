@@ -31,7 +31,7 @@
   },
   "bugs": "https://github.com/Quolle-main/SDK/issues",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

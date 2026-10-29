@@ -2,6 +2,11 @@
 
 All notable changes to this package. Versions follow [Semantic Versioning](https://semver.org).
 
+## 0.3.1 — 2026-10-29
+
+- Published from GitHub Actions through npm Trusted Publishing, with a provenance attestation linking this version to the commit and workflow that built it. No code changes.
+- `package.json` points at the repository's current home, `github.com/Quolle-main/Node.js-SDK`.
+
 ## 0.3.0 — 2026-10-29
 
 ### Added

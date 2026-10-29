@@ -8,7 +8,7 @@ Official Node.js / TypeScript client for the [Quolle](https://quolle.com) email 
 npm install @quolle/sdk
 ```
 
-Requires Node.js 18+. No third-party dependencies.
+Requires Node.js 20+. No third-party dependencies.
 
 ## Quick start
 

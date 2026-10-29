@@ -1,8 +1,10 @@
 import { QuolleError, type QuolleConfig } from "./types";
 import { EmailsResource } from "./emails";
 import { WebhooksResource } from "./webhooks";
+import { DomainsResource } from "./domains";
+import { ApiKeysResource } from "./apiKeys";
 
-export const VERSION = "0.3.1";
+export const VERSION = "0.4.0";
 
 export class Quolle {
   private readonly apiKey: string;
@@ -13,6 +15,8 @@ export class Quolle {
 
   readonly emails: EmailsResource;
   readonly webhooks: WebhooksResource;
+  readonly domains: DomainsResource;
+  readonly apiKeys: ApiKeysResource;
 
   /**
    * @param apiKeyOrConfig  An API key string, or a config object. If omitted,
@@ -45,7 +49,9 @@ export class Quolle {
     this.maxRetries = config.maxRetries ?? 3;
 
     this.emails = new EmailsResource(this);
-    this.webhooks = new WebhooksResource();
+    this.webhooks = new WebhooksResource(this);
+    this.domains = new DomainsResource(this);
+    this.apiKeys = new ApiKeysResource(this);
   }
 
   /** Set an idempotency key for the NEXT request (legacy; prefer the per-call option). */

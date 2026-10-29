@@ -114,6 +114,121 @@ export interface WebhookEvent {
   [key: string]: unknown;
 }
 
+// ── Domains ──────────────────────────────────────────────────────────────────
+
+export interface Domain {
+  id: string;
+  domain: string;
+  /** `pending`, `verified` or `failed`. */
+  status: string;
+  dnsProvider: string | null;
+  dnsPublished: boolean;
+  verificationError: string | null;
+  trackingEnabled: boolean;
+  trackingDomain: string | null;
+  trackingDomainVerified: boolean;
+  createdAt: string;
+  /** Present once verified: the 14-day warm-up, with today's caps while it runs. */
+  warmup?: {
+    capped: boolean;
+    day: number;
+    dailyLimits: { transactional: number; marketing: number } | null;
+    graduatesAt: string | null;
+    sentToday?: { transactional: number; marketing: number };
+    resetsAt?: string;
+  };
+  [key: string]: unknown;
+}
+
+export interface CreateDomainResult {
+  domain: Domain;
+  /** The DNS records to publish at your DNS provider. */
+  dnsRecords: Record<string, unknown>[];
+  isCloudflare: boolean;
+  message: string;
+  [key: string]: unknown;
+}
+
+// ── API keys ─────────────────────────────────────────────────────────────────
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  /** Last characters of the key, for recognising it. */
+  preview: string | null;
+  /** `full` (everything) or `sending` (send email and read its status). */
+  scope: "full" | "sending";
+  /** Sending domains the key is limited to; empty means any. */
+  domains: string[];
+  expiresAt: string | null;
+  expired: boolean;
+  createdBy: string | null;
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
+export interface CreateApiKeyParams {
+  name: string;
+  /** Default `full`. A `sending` key can only send email and read its status. */
+  scope?: "full" | "sending";
+  /** Limit the key to these verified sending domains. */
+  domains?: string[];
+  /** Days until the key stops working. Omit for no expiry. */
+  expiresInDays?: number;
+}
+
+export interface CreatedApiKey {
+  /** The key itself (`qle_…`). Shown once; store it now. */
+  key: string;
+  id: string;
+  name: string;
+  scope: "full" | "sending";
+  domains: string[];
+  expiresAt: string | null;
+}
+
+// ── Webhook endpoints ────────────────────────────────────────────────────────
+
+export interface Webhook {
+  id: string;
+  url: string;
+  events: string[];
+  /** Always masked when read back; the real secret is returned only by create and rotateSecret. */
+  secret: string | null;
+  createdAt: string;
+}
+
+export interface CreatedWebhook {
+  id: string;
+  url: string;
+  events: string[];
+  /** The signing secret (`whsec_…`). Shown once; store it now. */
+  secret: string;
+}
+
+export interface WebhookTestResult {
+  eventId: string;
+  ok: boolean;
+  /** Your endpoint's HTTP status, when it answered. */
+  status: number | null;
+  ms: number | null;
+  error: string | null;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  eventId: string;
+  event: string;
+  status: "succeeded" | "pending" | "failed";
+  attempts: number;
+  responseStatus: number | null;
+  responseMs: number | null;
+  lastError: string | null;
+  payload: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export class QuolleError extends Error {
   /**
    * The API's stable, machine-readable error code (e.g. `validation_error`,

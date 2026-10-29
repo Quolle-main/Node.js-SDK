@@ -183,6 +183,10 @@ double-sending, a POST is only retried on a 5xx/network error when you pass an i
 key; a 429 is always safe to retry (the request was never processed). Tune with
 `maxRetries` on the constructor (default 3).
 
+Quota limits are the exception. `daily_quota_exceeded` and `warmup_limit_exceeded` (and
+any `Retry-After` over 60 seconds) are thrown immediately, because they reset at a fixed
+time, not in seconds. Check `err.code` and queue the send for later.
+
 ## License
 
 MIT

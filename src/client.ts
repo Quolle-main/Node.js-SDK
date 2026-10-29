@@ -2,7 +2,7 @@ import { QuolleError, type QuolleConfig } from "./types";
 import { EmailsResource } from "./emails";
 import { WebhooksResource } from "./webhooks";
 
-export const VERSION = "0.3.0";
+export const VERSION = "0.3.1";
 
 export class Quolle {
   private readonly apiKey: string;

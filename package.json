@@ -1,6 +1,6 @@
 {
   "name": "@quolle/sdk",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Official Node.js SDK for Quolle — transactional email API for African SaaS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

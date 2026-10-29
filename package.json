@@ -27,9 +27,9 @@
   "homepage": "https://quolle.com",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Quolle-main/SDK.git"
+    "url": "git+https://github.com/Quolle-main/Node.js-SDK.git"
   },
-  "bugs": "https://github.com/Quolle-main/SDK/issues",
+  "bugs": "https://github.com/Quolle-main/Node.js-SDK/issues",
   "engines": {
     "node": ">=20"
   },

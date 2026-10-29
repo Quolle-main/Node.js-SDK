@@ -62,7 +62,7 @@ function mockFetch(sequence) {
     if (step.throw) throw new Error("network down");
     return new Response(JSON.stringify(step.body ?? {}), {
       status: step.status,
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...(step.headers ?? {}) },
     });
   };
   return { calls: () => calls };
@@ -145,4 +145,27 @@ test("sendUSSD sends the API's USSD shape and is never retried on 5xx", async ()
   );
   assert.equal(m.calls().length, 1);
   assert.equal(JSON.parse(m.calls()[0].opts.body).phoneNumber, "+2348000000000");
+});
+
+// ── Quota 429s are not retried (they reset at a fixed time, not in seconds) ───
+for (const code of ["daily_quota_exceeded", "warmup_limit_exceeded"]) {
+  test(`429 ${code} is thrown at once, not retried`, async () => {
+    const m = mockFetch([{ status: 429, body: { code, error: "cap reached" } }, { status: 200, body: { id: "em_ok" } }]);
+    const q = new Quolle({ apiKey: "qle_test", maxRetries: 3, timeout: 2000 });
+    await assert.rejects(
+      q.emails.send({ from: "a@b.com", to: "x@y.com", subject: "Hi", html: "<p>x</p>" }),
+      (e) => e instanceof QuolleError && e.code === code
+    );
+    assert.equal(m.calls().length, 1);
+  });
+}
+
+test("a 429 with a long Retry-After is thrown, not slept through", async () => {
+  const m = mockFetch([
+    { status: 429, body: { code: "rate_limit_exceeded", error: "slow down" }, headers: { "retry-after": "3600" } },
+    { status: 200, body: { id: "em_ok" } },
+  ]);
+  const q = new Quolle({ apiKey: "qle_test", maxRetries: 3, timeout: 2000 });
+  await assert.rejects(q.emails.send({ from: "a@b.com", to: "x@y.com", subject: "Hi", html: "<p>x</p>" }), QuolleError);
+  assert.equal(m.calls().length, 1);
 });

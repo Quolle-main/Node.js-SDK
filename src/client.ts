@@ -125,9 +125,12 @@ export class Quolle {
       const { error: _e, code, ...rest } = data;
       lastError = new QuolleError(message, res.status, rest, typeof code === "string" ? code : undefined);
 
-      const retryable = res.status === 429 || (res.status >= 500 && res.status <= 504 && idempotent);
-      if (attempt < this.maxRetries && retryable) {
-        await sleep(parseRetryAfter(res.headers.get("retry-after")) ?? backoffMs(attempt));
+      const retryable =
+        (res.status === 429 && !NO_RETRY_CODES.has(typeof code === "string" ? code : "")) ||
+        (res.status >= 500 && res.status <= 504 && idempotent);
+      const wait = parseRetryAfter(res.headers.get("retry-after"));
+      if (attempt < this.maxRetries && retryable && (wait === null || wait <= MAX_RETRY_WAIT_MS)) {
+        await sleep(wait ?? backoffMs(attempt));
         continue;
       }
       throw lastError;
@@ -135,6 +138,13 @@ export class Quolle {
     throw lastError ?? new QuolleError("Request failed", 0);
   }
 }
+
+// 429s that retrying can't fix: the limit resets at a fixed time (midnight UTC,
+// the next billing period), not in seconds. Thrown at once so the caller can
+// queue the send instead of blocking in a retry loop.
+const NO_RETRY_CODES = new Set(["daily_quota_exceeded", "warmup_limit_exceeded", "monthly_quota_exceeded"]);
+// A Retry-After longer than this means "not soon": throw instead of waiting.
+const MAX_RETRY_WAIT_MS = 60_000;
 
 // Exponential backoff: 0.5s, 1s, 2s, … capped at 8s, with jitter.
 function backoffMs(attempt: number): number {
@@ -144,9 +154,9 @@ function backoffMs(attempt: number): number {
 function parseRetryAfter(header: string | null): number | null {
   if (!header) return null;
   const secs = Number(header);
-  if (!Number.isNaN(secs)) return Math.min(secs * 1000, 30000);
+  if (!Number.isNaN(secs)) return Math.max(0, secs * 1000);
   const when = Date.parse(header);
-  if (!Number.isNaN(when)) return Math.max(0, Math.min(when - Date.now(), 30000));
+  if (!Number.isNaN(when)) return Math.max(0, when - Date.now());
   return null;
 }
 

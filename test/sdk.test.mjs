@@ -169,3 +169,70 @@ test("a 429 with a long Retry-After is thrown, not slept through", async () => {
   await assert.rejects(q.emails.send({ from: "a@b.com", to: "x@y.com", subject: "Hi", html: "<p>x</p>" }), QuolleError);
   assert.equal(m.calls().length, 1);
 });
+
+// ── Domains, API keys, webhook endpoints (K8) ────────────────────────────────
+test("domains: list, create, get, records, verify, remove hit the right routes", async () => {
+  const m = mockFetch([
+    { status: 200, body: { domains: [{ id: "d1", domain: "mail.acme.com" }] } },
+    { status: 201, body: { domain: { id: "d2" }, dnsRecords: [], isCloudflare: false, message: "ok" } },
+    { status: 200, body: { domain: { id: "d1" } } },
+    { status: 200, body: { records: [] } },
+    { status: 200, body: { status: "verified" } },
+    { status: 200, body: { message: "Domain removed" } },
+  ]);
+  const q = new Quolle({ apiKey: "qle_test", timeout: 2000 });
+  assert.equal((await q.domains.list())[0].domain, "mail.acme.com");
+  assert.equal((await q.domains.create("mail.acme.com")).domain.id, "d2");
+  assert.equal((await q.domains.get("d1")).id, "d1");
+  await q.domains.records("d1");
+  await q.domains.verify("d1");
+  await q.domains.remove("d1");
+  const calls = m.calls().map((c) => `${c.opts.method} ${new URL(c.url).pathname}`);
+  assert.deepEqual(calls, [
+    "GET /v1/domains", "POST /v1/domains", "GET /v1/domains/d1",
+    "GET /v1/domains/d1/records", "POST /v1/domains/d1/recheck", "DELETE /v1/domains/d1",
+  ]);
+  assert.deepEqual(JSON.parse(m.calls()[1].opts.body), { domain: "mail.acme.com" });
+});
+
+test("apiKeys: list, create, remove", async () => {
+  const m = mockFetch([
+    { status: 200, body: { keys: [{ id: "k1", scope: "full" }] } },
+    { status: 201, body: { key: "qle_new", id: "k2", name: "ci", scope: "sending", domains: [], expiresAt: null } },
+    { status: 200, body: { message: "API key deleted" } },
+  ]);
+  const q = new Quolle({ apiKey: "qle_test", timeout: 2000 });
+  assert.equal((await q.apiKeys.list())[0].id, "k1");
+  assert.equal((await q.apiKeys.create({ name: "ci", scope: "sending" })).key, "qle_new");
+  await q.apiKeys.remove("k2");
+  assert.deepEqual(m.calls().map((c) => `${c.opts.method} ${new URL(c.url).pathname}`), [
+    "GET /v1/keys", "POST /v1/keys", "DELETE /v1/keys/k2",
+  ]);
+  assert.deepEqual(JSON.parse(m.calls()[1].opts.body), { name: "ci", scope: "sending" });
+});
+
+test("webhooks: endpoint management routes", async () => {
+  const m = mockFetch([{ status: 200, body: { webhooks: [], deliveries: [], events: [] } }]);
+  const q = new Quolle({ apiKey: "qle_test", timeout: 2000 });
+  await q.webhooks.events();
+  await q.webhooks.list();
+  await q.webhooks.create({ url: "https://x.io/h", events: ["email.delivered"] });
+  await q.webhooks.get("w1");
+  await q.webhooks.update("w1", { events: ["email.bounced"] });
+  await q.webhooks.test("w1");
+  await q.webhooks.deliveries("w1", { status: "failed", limit: 10 });
+  await q.webhooks.redeliver("w1", "dl1");
+  await q.webhooks.rotateSecret("w1");
+  await q.webhooks.remove("w1");
+  assert.deepEqual(m.calls().map((c) => `${c.opts.method} ${new URL(c.url).pathname}${new URL(c.url).search}`), [
+    "GET /v1/webhooks/events", "GET /v1/webhooks", "POST /v1/webhooks", "GET /v1/webhooks/w1",
+    "PATCH /v1/webhooks/w1", "POST /v1/webhooks/w1/test", "GET /v1/webhooks/w1/deliveries?status=failed&limit=10",
+    "POST /v1/webhooks/w1/deliveries/dl1/redeliver", "POST /v1/webhooks/w1/rotate-secret", "DELETE /v1/webhooks/w1",
+  ]);
+});
+
+test("a sending-only key on a management call surfaces restricted_api_key", async () => {
+  mockFetch([{ status: 403, body: { code: "restricted_api_key", error: "This API key can only send email." } }]);
+  const q = new Quolle({ apiKey: "qle_test", maxRetries: 3, timeout: 2000 });
+  await assert.rejects(q.apiKeys.list(), (e) => e instanceof QuolleError && e.code === "restricted_api_key" && e.statusCode === 403);
+});

@@ -175,6 +175,31 @@ try {
 `verifyWebhook(...)` is also exported standalone. Verification checks the HMAC-SHA256
 signature and rejects timestamps outside a 5-minute window (replay protection).
 
+## Domains, API keys and webhooks
+
+These need a **full-access** API key. A sending-only key gets `403` with code `restricted_api_key`, so a key you ship in an app can't create keys or change your domains.
+
+```ts
+// Domains
+const { domain, dnsRecords } = await quolle.domains.create("mail.example.com");
+await quolle.domains.verify(domain.id);           // check DNS now
+const domains = await quolle.domains.list();      // status and warm-up for each
+await quolle.domains.remove(domain.id);
+
+// API keys
+const { key } = await quolle.apiKeys.create({ name: "web app", scope: "sending", domains: ["mail.example.com"] });
+const keys = await quolle.apiKeys.list();          // previews only; `key` is shown once
+await quolle.apiKeys.remove(keys[0].id);
+
+// Webhook endpoints
+const hook = await quolle.webhooks.create({ url: "https://example.com/hooks/quolle", events: ["email.delivered", "email.bounced"] });
+// hook.secret (whsec_…) is shown once; store it for quolle.webhooks.verify(...)
+await quolle.webhooks.test(hook.id);
+const failed = await quolle.webhooks.deliveries(hook.id, { status: "failed" });
+for (const d of failed) await quolle.webhooks.redeliver(hook.id, d.id);
+const { secret } = await quolle.webhooks.rotateSecret(hook.id);
+```
+
 ## Automatic retries
 
 Transient failures — HTTP 429 (rate limit) and 5xx, plus network errors — are retried

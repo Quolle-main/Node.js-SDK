@@ -10,4 +10,13 @@ export type {
   Attachment,
   Email,
   WebhookEvent,
+  Domain,
+  CreateDomainResult,
+  ApiKey,
+  CreateApiKeyParams,
+  CreatedApiKey,
+  Webhook,
+  CreatedWebhook,
+  WebhookTestResult,
+  WebhookDelivery,
 } from "./types";

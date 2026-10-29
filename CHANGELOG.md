@@ -2,6 +2,15 @@
 
 All notable changes to this package. Versions follow [Semantic Versioning](https://semver.org).
 
+## 0.4.0 — 2026-10-29
+
+### Added
+- `quolle.domains`: `list`, `create`, `get`, `records`, `verify`, `remove`. Add a sending domain, get its DNS records, check DNS on demand, and see verification and warm-up state.
+- `quolle.apiKeys`: `list`, `create`, `remove`. Create keys (full access or sending-only, optionally limited to some domains, optionally expiring) and revoke them.
+- `quolle.webhooks` manages endpoints as well as verifying deliveries: `list`, `create`, `get`, `update`, `remove`, `test`, `deliveries`, `redeliver`, `rotateSecret`, `events`.
+
+These need a full-access API key; a sending-only key gets `restricted_api_key`. Requires Quolle API support for API-key access to `/v1/keys` and `/v1/webhooks` (live from 29 Oct 2026).
+
 ## 0.3.1 — 2026-10-29
 
 - Published from GitHub Actions through npm Trusted Publishing, with a provenance attestation linking this version to the commit and workflow that built it. No code changes.
